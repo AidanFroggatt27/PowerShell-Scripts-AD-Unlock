@@ -44,13 +44,19 @@ function UnlockAccount {
         [pscredential]$creds    
     )
         try {
-            $userinfo = Get-ADUser -Filter {SAMAccountName -eq $user} -Credential $creds -ErrorAction Stop
-            $lockedstatus = $userinfo.lockedout
+            $userinfo = Get-ADUser -Filter {SAMAccountName -eq $user} -Credential $creds -Properties LockedOut -ErrorAction Stop
+            #$lockedstatus = $userinfo.lockedout
     
+            $lockedstatus = $userinfo.lockedout
+            # Debugging output
+            Write-Host "Locked status of $user : $lockedstatus" -ForegroundColor Yellow
+
+            #$lockedstatus = $userinfo.lockedout
+
             if ($lockedstatus -eq $true) {
-                Unlock-ADAccount -Identity $user -Credential $creds -Server DC01
+                Unlock-ADAccount -Identity $user -Credential $creds
                 Write-Host "$user's Account is locked... Unlocking" -ForegroundColor Green
-                Write-Host "$user's Account has been unlocked" -ForegroundColor Cyan
+                Write-Host "$user's Account has been unlocked" -BackgroundColor Green
             } else{
                 Write-Host "Error Unlocking $user's Account: Account Already Unlocked!" -BackgroundColor Red -
             }
