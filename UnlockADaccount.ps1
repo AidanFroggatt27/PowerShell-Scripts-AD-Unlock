@@ -16,6 +16,26 @@ function Get-ValidCredentials {
     return $creds
 }
 
+function Get-LockedAccounts {
+
+    try {
+        $lockedUsers = Search-ADAccount -LockedOut
+        if ($null -ne $lockedUsers){
+            Write-Host "The following Users Accounts are Locked:" -ForegroundColor DarkYellow
+            $lockedUsers | ForEach-Object {Write-Host $_.Name, "| User Login Name:" $_.SAMAccountName -ForegroundColor DarkYellow}
+        }
+        else{
+            Write-Host "No Locked Accounts Found" -BackgroundColor Red
+            Read-Host -Prompt 'Press "[Enter]" to Exit'
+            Exit
+        }    
+    }
+    catch {
+        Write-Host "An Error Occured: $($_.Exception.Message)" -BackgroundColor Red
+    }
+    
+}
+
 function Get-ValidUser {
     do {
         $user = Read-Host -Prompt 'Input User Login Name'
@@ -45,18 +65,15 @@ function UnlockAccount {
     )
         try {
             $userinfo = Get-ADUser -Filter {SAMAccountName -eq $user} -Credential $creds -Properties LockedOut -ErrorAction Stop
-            #$lockedstatus = $userinfo.lockedout
-    
+
             $lockedstatus = $userinfo.lockedout
             # Debugging output
             Write-Host "Locked status of $user : $lockedstatus" -ForegroundColor Yellow
 
-            #$lockedstatus = $userinfo.lockedout
-
             if ($lockedstatus -eq $true) {
                 Unlock-ADAccount -Identity $user -Credential $creds
                 Write-Host "$user's Account is locked... Unlocking" -ForegroundColor Green
-                Write-Host "$user's Account has been unlocked" -BackgroundColor Green
+                Write-Host "$user's Account has been unlocked!" -ForegroundColor Green
             } else{
                 Write-Host "Error Unlocking $user's Account: Account Already Unlocked!" -BackgroundColor Red -
             }
@@ -71,6 +88,7 @@ $adminUsername = $creds.UserName
 Write-Host "Logged in as: $adminUsername" -ForegroundColor Yellow
 
 do {
+    Get-LockedAccounts
     $user = Get-ValidUser
     UnlockAccount -user $user -Creds $creds
     $response = Read-Host -Prompt 'Press "[Enter]" to Exit Or "[A]" To Unlock Another Account...'
